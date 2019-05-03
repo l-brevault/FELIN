@@ -4,7 +4,7 @@ FELIN is a framework for design and optimization of launch vehicle based on Open
 
 ## Getting Started
 
-Just clone (or download the files) and you are set to go
+Just clone (or download the files in the master) and you are set to go
 
 ### Prerequisites
 
@@ -30,5 +30,5 @@ Version 0.1
 
 ## Authors
 
-* **Loic Brevault** - *ONERA* - [email](loic.brevault@onera.fr)
-* **Mathieu Balesdent** - *ONERA* - [email](mathieu.balesdent@onera.fr)
+* **Loic Brevault** - *ONERA* - [mailto](mailto:loic.brevault@onera.fr)
+* **Mathieu Balesdent** - *ONERA* - [mailto](mailto:mathieu.balesdent@onera.fr)
