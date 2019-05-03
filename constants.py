@@ -33,8 +33,8 @@ gamma0 = np.pi/2.
 
 Duration_stage_separation = 2.
 
-derating_stage_2 = 0.5
-derating_stage_1 = 0.3
+derating_stage_2 = 0.45
+derating_stage_1 = 0.25
 
 Pa_sol = 101325.0
 

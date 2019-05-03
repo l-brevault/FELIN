@@ -98,15 +98,3 @@ class Dry_Mass_stage_1_Comp(ExplicitComponent):
                         
         outputs['Dry_mass_stage_1']=Dry_mass_stage_1
         
-#        outputs['Length_stage_1']=L_total
-#        outputs['M_thrust_frame_1']=M_thrust_frame
-#        outputs['M_FT_1']=M_FT
-#        outputs['M_OxT_1']=M_OxT
-#        outputs['M_TPS_OxT_1']=M_TPS_OxT
-#        outputs['M_TPS_FT_1']=M_TPS_FT
-#        outputs['M_TVC_1']=M_TVC
-#        outputs['M_avio_1']=M_avio
-#        outputs['M_EPS_1']=M_EPS
-#        outputs['M_intertank_1']=M_intertank
-#        outputs['M_interstage_1']=M_interstage
-        
