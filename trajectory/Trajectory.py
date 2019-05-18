@@ -85,10 +85,10 @@ class Trajectory_comp(ExplicitComponent):
 
     def compute(self, inputs, outputs):
         
-        #Integration parameters
+        #Integration parameters 
         atol_integration =1e-4
         rtol_integration=1e-4
-        integration_method = 'BDF' #'BDF'
+        integration_method = 'BDF' #Implicit method based on backward-differentiation formulas see Scipy for more details
         step=2.
 
         #Constant definition
@@ -101,30 +101,30 @@ class Trajectory_comp(ExplicitComponent):
         Constants['longi_Kourou'] =Spec.specifications['launch_site']['longitude']
         Constants['lat_Kourou'] = Spec.specifications['launch_site']['latitude']
         Constants['Payload_mass'] = Spec.specifications['mission']['Payload_mass']
-        Constants['Fairing_mass'] =Spec.specifications['masses_additionnelles_etage_2']['Fairing_mass']
+        Constants['Fairing_mass'] =Spec.specifications['stage_2_additional_masses']['Fairing_mass']
 
         Duration_stage_separation = Cst.Duration_stage_separation
 
         ######################## 1st stage definition ###################################
         #Mass and time definition
-        tf1 = (inputs['Prop_mass_stage_1'])/(inputs['N_eng_stage_1']*inputs['Mass_flow_rate_stage_1']*0.8)
+        tf1 = (inputs['Prop_mass_stage_1'])/(inputs['N_eng_stage_1']*inputs['Mass_flow_rate_stage_1']*0.8) #time of flight
         initial_mass = inputs['Dry_mass_stage_1'] + inputs['Dry_mass_stage_2'] +\
                             inputs['Prop_mass_stage_1'] + inputs['Prop_mass_stage_2']+\
-                            Constants['Payload_mass'] + Constants['Fairing_mass']
+                            Constants['Payload_mass'] + Constants['Fairing_mass'] #Gross Lift-Off Weight (GLOW)
 
-        outputs['GLOW'] = initial_mass
-        final_mass_stage_1 = initial_mass -inputs['Prop_mass_stage_1'][0]
-        table_alt_theta_stage_1 = np.array([-1.,2000e3])
-        interp_theta_stage_1 = interpolate.interp1d(table_alt_theta_stage_1,inputs['command_stage_1_exo'],kind='linear')
+        outputs['GLOW'] = initial_mass #Gross Lift-Off Weight (GLOW)
+        final_mass_stage_1 = initial_mass -inputs['Prop_mass_stage_1'][0] #Supposed final mass after stage 1 propellant combustion
+        table_alt_theta_stage_1 = np.array([-1.,2000e3])  #table for pitch angle interpolation as a function of altitude
+        interp_theta_stage_1 = interpolate.interp1d(table_alt_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
 
-        #Aerodynamics definition
+        #Aerodynamics definition (table of Mach, Incidence (alpha), and resulting drag coefficient CX)
         Table_Mach_ = inputs['Mach_table'] 
         Table_incidence = inputs['AoA_table']
         Interp2_CX_complete_launcher=interpolate.interp2d(Table_incidence,Table_Mach_,inputs['Table_CX_complete_ascent'])
         
         ######################## 2nd stage definition ###################################
-        tf2 = inputs['Prop_mass_stage_2']/(inputs['Mass_flow_rate_stage_2'][0]*(1-(1-Cst.derating_stage_2)))
-        final_mass_stage_2 = inputs['Dry_mass_stage_2'] + Constants['Payload_mass']
+        tf2 = inputs['Prop_mass_stage_2']/(inputs['Mass_flow_rate_stage_2'][0]*(1-(1-Cst.derating_stage_2)))  #time of flight 2nd stage
+        final_mass_stage_2 = inputs['Dry_mass_stage_2'] + Constants['Payload_mass']  #expected final mass of the 2nd stage
 
         ##################### Definition of parameter dictionary for 1st stage ###############
         param_integration_stage_1 = {}       
@@ -133,16 +133,16 @@ class Trajectory_comp(ExplicitComponent):
         
         param_integration_stage_1['propulsion'] = {}
         param_integration_stage_1['propulsion']['Mass_flow_rate']=inputs['Mass_flow_rate_stage_1'][0]
-        param_integration_stage_1['propulsion']['Isp']=inputs['Isp_stage_1'][0]
-        param_integration_stage_1['propulsion']['N_eng']=inputs['N_eng_stage_1'][0]
+        param_integration_stage_1['propulsion']['Isp']=inputs['Isp_stage_1'][0]  #specific impulse estimated by propulsion discipline
+        param_integration_stage_1['propulsion']['N_eng']=inputs['N_eng_stage_1'][0] #number of engines
         
         param_integration_stage_1['masses'] = {}
         param_integration_stage_1['masses']['Mass_f']= final_mass_stage_1
         
         param_integration_stage_1['command'] = {}
-        param_integration_stage_1['command']['Pitch_over_duration'] = inputs['Pitch_over_duration'][0]
-        param_integration_stage_1['command']['Delta_theta_pitch_over'] = inputs['Delta_theta_pitch_over'][0]
-        param_integration_stage_1['command']['Delta_vertical_phase'] = inputs['Delta_vertical_phase'][0]
+        param_integration_stage_1['command']['Pitch_over_duration'] = inputs['Pitch_over_duration'][0] #duration of the pitch over manoeuver
+        param_integration_stage_1['command']['Delta_theta_pitch_over'] = inputs['Delta_theta_pitch_over'][0] #angle of pitch for the pitch over manoeuver
+        param_integration_stage_1['command']['Delta_vertical_phase'] = inputs['Delta_vertical_phase'][0] #duration of the vertical lift-off phase
         param_integration_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
         
         param_integration_stage_1['geometry'] = {}
@@ -155,59 +155,60 @@ class Trajectory_comp(ExplicitComponent):
        
         ############ structure for output data ###############
         data_simu = {}
-        data_simu['T'] =  np.empty((1))
-        data_simu['nx'] = np.empty((1))
-        data_simu['Mach'] = np.empty((1))       
-        data_simu['pdyn'] = np.empty((1))       
-        data_simu['flux'] = np.empty((1))       
-        data_simu['alt'] = np.empty((1))       
-        data_simu['alpha'] = np.empty((1))        
-        data_simu['theta'] = np.empty((1))       
-        data_simu['r'] = np.empty((1))            
-        data_simu['V'] = np.empty((1))       
-        data_simu['gamma'] = np.empty((1))
-        data_simu['rho'] = np.empty((1))       
-        data_simu['CX'] = np.empty((1))       
-        data_simu['thrust'] = np.empty((1))     
-        data_simu['mass_flow_rate'] = np.empty((1))       
-        data_simu['lat'] = np.empty((1))       
-        data_simu['longi'] = np.empty((1))       
-        data_simu['m'] = np.empty((1))
-        data_simu['distance'] = np.empty((1))       
+        data_simu['T'] =  np.empty((1))     #Time (s)
+        data_simu['nx'] = np.empty((1))     #Axial load factor
+        data_simu['Mach'] = np.empty((1))   #Mach    
+        data_simu['pdyn'] = np.empty((1))   #Dynamic pressure (W/m2)
+        data_simu['flux'] = np.empty((1))   #Heat flux (kg m^-2 s^-1)   
+        data_simu['alt'] = np.empty((1))    #altitude (m)   
+        data_simu['alpha'] = np.empty((1))  #angle of attack (rad)      
+        data_simu['theta'] = np.empty((1))  #pitch angle (rad)     
+        data_simu['r'] = np.empty((1))      #altitude from the center of the Earth (m)      
+        data_simu['V'] = np.empty((1))      #norm of velocity (m/s) 
+        data_simu['gamma'] = np.empty((1))  #flight path angle (rad)
+        data_simu['rho'] = np.empty((1))    #air density (kg/m3)   
+        data_simu['CX'] = np.empty((1))     #drag coefficient  
+        data_simu['thrust'] = np.empty((1)) #thrust (N)    
+        data_simu['mass_flow_rate'] = np.empty((1))  #mass flow rate (kg/s)     
+        data_simu['lat'] = np.empty((1))    #latitude (rad)  
+        data_simu['longi'] = np.empty((1))  #longitude (rad)     
+        data_simu['m'] = np.empty((1))      #launcher mass (kg)
+        data_simu['distance'] = np.empty((1)) #distance from launch pad (m)      
 
            
         # definition of considered events
-        event_fairing_ = lambda t,x :event_fairing_jettison(t,x,param_integration_stage_1)
+        event_fairing_ = lambda t,x :event_fairing_jettison(t,x,param_integration_stage_1) #event jettison fairing if heat flux below 1135 (kg m^-2 s^-1) 
         event_fairing_.terminal = True
         event_fairing_.direction = -1
 
-        event_meco_ = lambda t,x :event_meco(t,x,param_integration_stage_1)
+        event_meco_ = lambda t,x :event_meco(t,x,param_integration_stage_1) #main engine cut-off if propellant mass = 0.
         event_meco_.terminal = True
         event_meco_.direction = -1     
         
-        event_exo_flight_ = lambda t,x :event_command_stage_1_theta(t,x,param_integration_stage_1)
+        event_exo_flight_ = lambda t,x :event_command_stage_1_theta(t,x,param_integration_stage_1) #end of gravity turn
         event_exo_flight_.terminal = True
         event_exo_flight_.direction = -1       
                 
-        event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_1)
+        event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_1) #launcher impact the ground
         event_impact_.terminal = True
         event_impact_.direction = -1  
         
-        fonction_ode_integration = lambda t,x :simulation_stage_1(t,x,param_integration_stage_1)
+        fonction_ode_integration = lambda t,x :simulation_stage_1(t,x,param_integration_stage_1)  #launcher simulation equations of motion
         
         param_simu_stage_1 = copy.deepcopy(param_integration_stage_1)              
         param_simu_stage_1['simu']['Mode_simu']=0.
         
-        fonction_ode_simu = lambda t,x :simulation_stage_1(t,x,param_simu_stage_1)
+        fonction_ode_simu = lambda t,x :simulation_stage_1(t,x,param_simu_stage_1)  #launcher simulation equations of motion
 
         initial_state = np.array([Constants['r0'],\
                         Constants['V0'],\
                         Constants['gamma0'],\
                         Constants['longi0'],\
-                        initial_mass])
+                        initial_mass]) #initial state of launcher
         
         span_integration = (0.,tf1)
         
+        #settings of event caracteristics
         dico_events_stage_1 = {}
         dico_events_stage_1['MECO'] = {}
         dico_events_stage_1['MECO']['actif'] = False
@@ -240,7 +241,7 @@ class Trajectory_comp(ExplicitComponent):
             current_sol = integrate.solve_ivp(fonction_ode_integration,span_integration, initial_state,
                                       atol=atol_integration,rtol=rtol_integration,
                                       dense_output = True,method=integration_method,
-                                      events =  dico_events_stage_1['list_events'])
+                                      events =  dico_events_stage_1['list_events'])  #integration of equations of motion
 
             current_T = np.append(np.arange(current_sol.t[0],current_sol.t[-1],step),current_sol.t[-1])
             current_NX = np.zeros([len(current_T),1])
@@ -262,6 +263,7 @@ class Trajectory_comp(ExplicitComponent):
             current_m = np.zeros([len(current_T),1])
             current_mass_flow_rate = np.zeros([len(current_T),1])
 
+            #Post traitment of the ODE integration to save the interesting data 
             for i in range(len(current_T)):
                 (current_r[i], current_V[i], current_gamma[i], current_longi[i], current_m[i], current_NX[i],
                 current_Mach[i],current_Pdyn[i],current_flux[i],current_alt[i],current_alpha[i],current_theta[i],
@@ -338,7 +340,8 @@ class Trajectory_comp(ExplicitComponent):
         state_separation_stage_1 = current_sol.y[:,-1].copy() 
         outputs['state_separation_stage_1'] = state_separation_stage_1
         outputs['max_pdyn_load_ascent_stage_1'] = np.max(data_simu['pdyn'])
-#        ######################## 2nd stage ##########################
+        
+####################################### 2nd stage ####################################################################
 
         instant_end_flight_stage_1 = current_sol.t[-1]
         outputs['alpha_cont']=np.max(np.abs(data_simu['alpha']))
@@ -375,24 +378,24 @@ class Trajectory_comp(ExplicitComponent):
              
             ##### definition of events to be considered #####
     
-            event_seco_ = lambda t,x :event_seco(t,x,param_integration_stage_2)
+            event_seco_ = lambda t,x :event_seco(t,x,param_integration_stage_2)  #Second stage engine cut-off
             event_seco_.terminal = True
             event_seco_.direction = 1
     #            
-            event_fairing = lambda t,x :event_fairing_jettison(t,x,param_integration_stage_2)
+            event_fairing = lambda t,x :event_fairing_jettison(t,x,param_integration_stage_2) #Second stage fairing jettison
             event_fairing.terminal = True
             event_fairing.direction = -1 
             
-            event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_2)
+            event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_2) ##Second stage Earth impact
             event_impact_.terminal = True
             event_impact_.direction = -1  
             
-            fonction_ode_integration = lambda t,x :simulation_stage_2(t,x,param_integration_stage_2)
+            fonction_ode_integration = lambda t,x :simulation_stage_2(t,x,param_integration_stage_2) #Simulation of the 2nd stage - equations of motion
             
             param_simu_stage_2 = copy.deepcopy(param_integration_stage_2)              
             param_simu_stage_2['simu']['Mode_simu']=0.
             
-            fonction_ode_simu = lambda t,x :simulation_stage_2(t,x,param_simu_stage_2)
+            fonction_ode_simu = lambda t,x :simulation_stage_2(t,x,param_simu_stage_2) #Simulation of the 2nd stage - equations of motion
             
             dico_events_stage_2 = {}
              
@@ -453,6 +456,7 @@ class Trajectory_comp(ExplicitComponent):
                 current_m = np.zeros([len(current_T),1])
                 current_mass_flow_rate = np.zeros([len(current_T),1])
                 
+                #Post traitment of the 2nd stage ODE integration to save interesting data
                 for i in range(len(current_T)):
                     (current_r[i], current_V[i], current_gamma[i], current_longi[i], current_m[i], current_NX[i],
                     current_Mach[i],current_Pdyn[i],current_flux[i],current_alt[i],current_alpha[i],current_theta[i],
@@ -501,7 +505,7 @@ class Trajectory_comp(ExplicitComponent):
                 data_simu['r'] =np.concatenate((data_simu['r'],current_r))
  
             
-        #### Outputs data
+        #### Outputs data for OpenMDAO
         Nb_pt = len(data_simu['T'])
         outputs['Nb_pt_ascent'] = Nb_pt
         outputs['T_ascent'][0:Nb_pt] = data_simu['T'].T[0]

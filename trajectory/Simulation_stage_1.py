@@ -37,17 +37,17 @@ def simulation_stage_1(t,x, Parameters):
     Integration = Parameters['simu']['Mode_simu']
 
 
-    #Launcher characteristics
+    #Launcher characteristics for drag calculation
     S_ref = np.pi * Diameter**2/4.
     
-    #Compute atmosphere
+    #Compute current atmosphere
     alt = r-Cst.RT
     (Temp,Pa,rho,c) = compute_atmos(alt)
     Mach = V/c
     g_current = Cst.mu/((alt+Cst.RT)**2)
 
 
-    #Control command
+    #Control command to get the command associated to the vehicle state 
     cmd_tmp= Cmd.Command_stage_1(t,m,N_eng,Pa,Exit_nozzle_area,Pitch_over_duration,\
                                                 Delta_theta_pitch_over,Mass_f,Delta_vertical_phase,\
     											gamma,rho,V,Mass_flow_rate_0,Isp,alt,\
@@ -55,20 +55,20 @@ def simulation_stage_1(t,x, Parameters):
     
     
     
-    thrust= cmd_tmp[0]
-    alpha= cmd_tmp[1]
-    theta= cmd_tmp[2]
-    Mass_flow_rate= cmd_tmp[3]
+    thrust= cmd_tmp[0] #thrust
+    alpha= cmd_tmp[1]  #angle of attack
+    theta= cmd_tmp[2]  #pitch angle
+    Mass_flow_rate= cmd_tmp[3] #engines mass flow rate
 
     #Aerodynamic forces
-    CX = Interp_CX_stage_1(np.abs(alpha)*180/np.pi,Mach)
+    CX = Interp_CX_stage_1(np.abs(alpha)*180/np.pi,Mach)  #drag coefficient as a function of Mach and angle of attack
 
     #Equations of motion    
-    r_dot = V* np.sin(gamma)
-    V_dot = -0.5*rho*S_ref*CX*V**2./m - g_current*np.sin(gamma) + thrust*np.cos(theta-gamma)/m
-    gamma_dot = (V/r-g_current/V)*np.cos(gamma) + thrust*np.sin(theta-gamma)/(m*V) 
-    longi_dot = V*np.cos(gamma)/r
-    m_dot = - Mass_flow_rate
+    r_dot = V* np.sin(gamma) #gradient of radius
+    V_dot = -0.5*rho*S_ref*CX*V**2./m - g_current*np.sin(gamma) + thrust*np.cos(theta-gamma)/m #gradient of velocity
+    gamma_dot = (V/r-g_current/V)*np.cos(gamma) + thrust*np.sin(theta-gamma)/(m*V)  #gradient of flight path angle
+    longi_dot = V*np.cos(gamma)/r #gradient of longitude
+    m_dot = - Mass_flow_rate #gradient of vehicle mass
 
     dx = np.zeros([1,5])
     dx[0][0] = r_dot
@@ -82,12 +82,12 @@ def simulation_stage_1(t,x, Parameters):
         dx = np.zeros([1,5])
     
     if Integration == 1.:
+         #during integration just return the current state
         return dx[0]
     
     else:
-        #Load factors
-
-        # Pdyn, Flux, Distance    
+        #during post traitment return all the required data to be saved
+        #Load factors to save data: Pdyn, Flux, Distance    
         Pdyn = 0.5*rho*V**2
         flux= Pdyn*V
         lat = Spec.specifications['launch_site']['latitude']
@@ -95,8 +95,8 @@ def simulation_stage_1(t,x, Parameters):
         distance = dist.great_circle((Spec.specifications['launch_site']['latitude'],Spec.specifications['launch_site']['longitude']),\
                                      (lat,longi*180/np.pi+Spec.specifications['launch_site']['longitude'])).km
      
-        CA = CX*np.cos(np.abs(alpha))
-        NX = (thrust-Pdyn*CA*S_ref)/(m*Cst.mu/((alt+Cst.RT)**2))
+        CA = CX*np.cos(np.abs(alpha))  #aerodynamical force
+        NX = (thrust-Pdyn*CA*S_ref)/(m*Cst.mu/((alt+Cst.RT)**2))  #axial load factor
 
         return (r, V, gamma, longi, m, NX,
                 Mach,Pdyn,flux,

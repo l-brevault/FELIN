@@ -44,10 +44,10 @@ def simulation_stage_2(t,x, Parameters):
     duration_separation = Parameters['simu']['Duration_separation']
    
 
-    #Launcher characteristics
+    #Launcher characteristics for aerodyanimcs forces
     S_ref = np.pi * Diameter**2/4.
     
-    #Compute atmosphere
+    #Compute current atmosphere
     alt = r-Cst.RT
     (Temp,Pa,rho,c) = compute_atmos(alt)
     Mach = V/c
@@ -62,20 +62,20 @@ def simulation_stage_2(t,x, Parameters):
     
     
     
-    thrust= cmd_tmp[0]
-    alpha= cmd_tmp[1]
-    theta= cmd_tmp[2]
-    Mass_flow_rate= cmd_tmp[3]
+    thrust= cmd_tmp[0] #thurst (N)
+    alpha= cmd_tmp[1] #angle of attack (rad)
+    theta= cmd_tmp[2] #pitch angle (rad)
+    Mass_flow_rate= cmd_tmp[3] #engine mass flow rate (kg/s)
 
-    #Aerodynamic forces
+    #Aerodynamic forces (considered as constant for simplicity)
     CX = 0.2
 
     #Equations of motion    
-    r_dot = V* np.sin(gamma)
-    V_dot = -0.5*rho*S_ref*CX*V**2./m - g_current*np.sin(gamma) + thrust*np.cos(theta-gamma)/m
-    gamma_dot = (V/r-g_current/V)*np.cos(gamma) + thrust*np.sin(theta-gamma)/(m*V) 
-    longi_dot = V*np.cos(gamma)/r
-    m_dot = - Mass_flow_rate
+    r_dot = V* np.sin(gamma) #gradient radius
+    V_dot = -0.5*rho*S_ref*CX*V**2./m - g_current*np.sin(gamma) + thrust*np.cos(theta-gamma)/m #gradient velocity
+    gamma_dot = (V/r-g_current/V)*np.cos(gamma) + thrust*np.sin(theta-gamma)/(m*V) #gradient flight path angle
+    longi_dot = V*np.cos(gamma)/r #gradient longitude
+    m_dot = - Mass_flow_rate #gradient vehicle mass
 
     dx = np.zeros([1,5])
     dx[0][0] = r_dot
@@ -89,11 +89,11 @@ def simulation_stage_2(t,x, Parameters):
         dx = np.zeros([1,5])
     
     if Integration == 1.:
+        #if integration just return the current state
         return dx[0]
     else:
-        #Load factors
-
-        # Pdyn, Flux, Distance    
+        #For post-treatment return all the required data to be saved
+        #Load factors: Pdyn, Flux, Distance    
         Pdyn = 0.5*rho*V**2
         flux= Pdyn*V
         lat = Spec.specifications['launch_site']['latitude']

@@ -8,7 +8,7 @@ Created on Thu Jul 19 13:31:11 2018
 import numpy as np
 		
 def sizing(Mprop, OF, D,type_fuel):
-	#Calcul des volumes
+	#Volume calculations
 	M_F = Mprop /(1+OF)
 	M_OX = Mprop - M_F
 	mu_LOX = 1141.0  
@@ -18,29 +18,31 @@ def sizing(Mprop, OF, D,type_fuel):
 		mu_F = 422.36
 	elif type_fuel == 'RP1':
 		mu_F = 810.0
-	
+        
+	#Volume of LOX and fuel
 	V_OX = M_OX / mu_LOX
 	V_F = M_F / mu_F
-	V_tot= V_F+V_OX
-	h_dome = 0.3*D
+	V_tot= V_F+V_OX #volume total
+	h_dome = 0.3*D #height of the dome part of the tanks
 	
-	volume_domes = 4.0/3.0 * np.pi * (D/2)**2*h_dome
+	volume_domes = 4.0/3.0 * np.pi * (D/2)**2*h_dome #volume of the tank domes
 	p = 1.6075
-	S_dome = (4.0*np.pi* (( (D/2.0)**(2.0*p) + 2* (D/2.0)**(p) * h_dome**p )/3.0)**(1./p))
-	volume_virole_OX = V_OX - volume_domes
-	L_virole_OX = volume_virole_OX / np.pi /(D/2)**2
-	S_OX = L_virole_OX *(D/2)**2 * np.pi + S_dome
-	volume_virole_F = V_F - volume_domes
-	L_virole_F = volume_virole_F / np.pi /(D/2)**2
-	S_F = L_virole_F *(D/2.)**2 * np.pi + S_dome    
-	S_totale = S_OX+S_F
+	S_dome = (4.0*np.pi* (( (D/2.0)**(2.0*p) + 2* (D/2.0)**(p) * h_dome**p )/3.0)**(1./p)) #surface of the tank dome
+	volume_virole_OX = V_OX - volume_domes #volume of the cylindrical part of the tanks
+	L_virole_OX = volume_virole_OX / np.pi /(D/2)**2 #height of the cylindrical part of the tanks
+	S_OX = L_virole_OX *(D/2)**2 * np.pi + S_dome #surface of LOX tank
+	volume_virole_F = V_F - volume_domes #volume fuel cylindrical tank part
+	L_virole_F = volume_virole_F / np.pi /(D/2)**2 #height fuel cylindrical tank part
+	S_F = L_virole_F *(D/2.)**2 * np.pi + S_dome #surface fuel tank
+	S_totale = S_OX+S_F #total surface
 	S_exterieur = 2* np.pi*(L_virole_OX+L_virole_F+4*h_dome+0.5)*(D/2.)    
-	L_total = L_virole_OX + L_virole_F + 4*h_dome + 0.5
+	L_total = L_virole_OX + L_virole_F + 4*h_dome + 0.5 #total length
 	return S_OX, S_F, S_totale, S_dome, S_exterieur, L_total
 	
 def engine_mass(T, type_prop, feed): 
 
 #T in N !!!
+#See PhD thesis Castellini 2012, Polytechnico di Milano
  
 	if type_prop == 'Cryogenic':
 
@@ -108,6 +110,7 @@ def engine_mass(T, type_prop, feed):
 				return a*(T)**2 + b*T+c	
 			
 def thrust_frame_mass(T,M_eng,n_ax_max,N_eng,material,SSM):
+    #See PhD thesis Castellini 2012, Polytechnico di Milano
 
 	#Parametres
 	if material == 'Al':
@@ -119,6 +122,7 @@ def thrust_frame_mass(T,M_eng,n_ax_max,N_eng,material,SSM):
 	return (0.013*N_eng**0.795*(224.81*T)**0.579+0.01*N_eng*(M_eng/(0.45))**0.717)*0.45*(1.5*SSM*n_ax_max*9.80665)*k_SM
 	
 def tank_mass(P_dyn_max,n_ax_max,P_tanks_Ox,P_tanks_F,V_FT,V_Ox,D,S_Ox,S_F,S_dome,S_totale,type_prop,config,type_stage,type_struct):
+    #See PhD thesis Castellini 2012, Polytechnico di Milano
 
 	#Mass tanks
 	# Parametres
@@ -176,6 +180,8 @@ def tank_mass(P_dyn_max,n_ax_max,P_tanks_Ox,P_tanks_F,V_FT,V_Ox,D,S_Ox,S_F,S_dom
 	return M_FT,M_OxT,M_TPS_OxT,M_TPS_FT,M_inter_tank
 	
 def TVC_mass(T, techno):
+    #See PhD thesis Castellini 2012, Polytechnico di Milano
+
 	if techno == 'electromechanic':
 		return 0.1078*(T*10**-3)+43.702
 	elif techno == 'hydraulic':
@@ -206,7 +212,7 @@ def EPS_avio_mass(S_tot,RL):
 	
 def mass_interstage(S,D_inf,D_up,U_L):
 
-	#Coeff surete
+	#Coeff safety
 	k_SM=1
 
 	k_1_1=7.7165

@@ -14,7 +14,7 @@ def event_fairing_jettison(t, x,parameters):
     (Temp,Pa,rho,c) = compute_atmos(alt)
     flux = 0.5*rho*V**3
     value = flux - 1135.
-
+    #if flux is below 1135 (kg m^-2s^-1), jettison of the fairing
 
     return value
 

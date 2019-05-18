@@ -15,7 +15,8 @@ sys.path.append(r'../')
 class Aerodynamics_Comp(ExplicitComponent):
     def setup(self):
         ###Inputs definition
-
+        
+        #No inputs here
 
         ###Output definition        
         self.add_output('Table_CX_complete_ascent' ,val=np.ones((20,15)),  desc = 'Cx table - stage 1')

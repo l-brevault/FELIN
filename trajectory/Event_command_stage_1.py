@@ -20,7 +20,7 @@ def event_command_stage_1_theta(t,x,parameters):
     alt = r-Cst.RT
     (Temp,Pa,rho,c) = compute_atmos(alt)
     
-    qdyn =  .5*rho*V**2
+    Pdyn =  .5*rho*V**2
 
 
-    return qdyn - Spec.specifications['command']['ascent']['pdyn_end_gravity_turn']
+    return Pdyn - Spec.specifications['command']['ascent']['pdyn_end_gravity_turn']
