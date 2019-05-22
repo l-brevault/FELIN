@@ -30,7 +30,7 @@ def post_traitement(Pb):
     r_end = Pb['r_ascent'][Nb_final] #altitude end simulation
     V_end = Pb['V_ascent'][Nb_final] #velocity end simulation
     gamma_end = Pb['gamma_ascent'][Nb_final]*np.pi/180. #flight path angle end simulation (rad)
-    longi_end = Pb['longi_ascent'][Nb_final]*np.pi/180. #longitude end simulation (rad)²
+    longi_end = Pb['longi_ascent'][Nb_final]*np.pi/180. #longitude end simulation (rad)
     m_end = Pb['m_ascent'][Nb_final] #mass end simulation
 
     lat_end = Spec.specifications['launch_site']['latitude']*np.pi/180.
