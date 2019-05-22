@@ -374,7 +374,7 @@ class Trajectory_comp(ExplicitComponent):
             param_integration_stage_2['simu']['Duration_separation'] = Duration_stage_separation
             param_integration_stage_2['simu']['Duration_flight'] = tf2
              
-            initial_state_stage_2 = state_separation_stage_1
+            initial_state_stage_2 = state_separation_stage_1.copy()
              
             ##### definition of events to be considered #####
     
