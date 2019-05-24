@@ -17,6 +17,6 @@ class Dry_Mass_stage_1_Comp(ExplicitComponent):
         self.add_output('Dry_mass_stage_2',val=3000.)
 
     def compute(self, inputs, outputs):
-   
-        outputs['Dry_mass_stage_2'] = (55.*(inputs['Prop_mass_stage_2']/1e3)**(-0.49))/100*inputs['Prop_mass_stage_2']
-
+        
+        #Regression to estimate the dry mass (without the propellant) of the second stage as a function of the propellant mass
+        outputs['Dry_mass_stage_2'] = (80.*(inputs['Prop_mass_stage_2']/1e3)**(-0.5))/100*inputs['Prop_mass_stage_2'] ## Transcost MODEL

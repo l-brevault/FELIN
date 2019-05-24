@@ -42,7 +42,9 @@ class Launcher_vehicle(Group):
         indeps.add_output('Exit_nozzle_area_stage_1',0.5)
         indeps.add_output('Exit_nozzle_area_stage_2',0.5)
         indeps.add_output('Delta_vertical_phase',10.)
-        indeps.add_output('Delta_theta_pitch_over',1.)        
+        indeps.add_output('Delta_theta_pitch_over',1.)
+        indeps.add_output('is_fallout',1.)        
+        
         indeps.add_output('command_stage_1_exo',np.array([1.,1.]))
 
         
@@ -64,7 +66,7 @@ class Launcher_vehicle(Group):
                                        promotes_inputs=['Prop_mass_stage_2'],promotes_outputs=['Dry_mass_stage_2'])
 
         Aero = cycle.add_subsystem('Aero', Aerodynamics.Aerodynamics_Comp(),promotes_outputs=['Table_CX_complete_ascent',
-                                   'Mach_table','AoA_table'])
+                                   'Mach_table','AoA_table','CX_fallout_stage_1','CZ_fallout_stage_1',])
 
         Traj = cycle.add_subsystem('Traj', Trajectory.Trajectory_comp(),
                                    promotes_inputs=['Diameter_stage_1','Diameter_stage_2','Mass_flow_rate_stage_1',
@@ -74,14 +76,20 @@ class Launcher_vehicle(Group):
                                                     'Dry_mass_stage_2','Pitch_over_duration','thetacmd_i',
                                                     'thetacmd_f','ksi','Exit_nozzle_area_stage_1','Exit_nozzle_area_stage_2',
                                                     'Delta_vertical_phase','Delta_theta_pitch_over','Table_CX_complete_ascent',
-                                                    'Mach_table','AoA_table','command_stage_1_exo'],
+                                                    'Mach_table','AoA_table','command_stage_1_exo','CX_fallout_stage_1','CZ_fallout_stage_1','is_fallout'],
                                    promotes_outputs=['T_ascent','alt_ascent','flux_ascent','r_ascent',
                                                      'V_ascent','theta_ascent','alpha_ascent','nx_ascent','alpha_cont',
                                                      'Nb_pt_ascent','m_ascent','CX_ascent','GLOW',
                                                      'lat_ascent','gamma_ascent','longi_ascent','thrust_ascent',
                                                      'mass_flow_rate_ascent','Mach_ascent','pdyn_ascent',
                                                      'rho_ascent','distance_ascent','state_separation_stage_1',
-                                                     'max_pdyn_load_ascent_stage_1'])
+                                                     'max_pdyn_load_ascent_stage_1',\
+                                                     'T_fallout','alt_fallout','flux_fallout','r_fallout',
+                                                     'V_fallout','theta_fallout','alpha_fallout','nx_fallout',
+                                                     'Nb_pt_fallout','m_fallout','CX_fallout',
+                                                     'lat_fallout','gamma_fallout','longi_fallout','thrust_fallout',
+                                                     'mass_flow_rate_fallout','Mach_fallout','pdyn_fallout',
+                                                     'rho_fallout','distance_fallout',])
     
           
         

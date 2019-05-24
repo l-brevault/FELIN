@@ -22,7 +22,8 @@ class Aerodynamics_Comp(ExplicitComponent):
         self.add_output('Table_CX_complete_ascent' ,val=np.ones((20,15)),  desc = 'Cx table - stage 1')
         self.add_output('Mach_table' ,val=np.ones(20),  desc = 'Mach table - stage 1')
         self.add_output('AoA_table' ,val=np.ones(15),  desc = 'Angle of attack table - stage 1')
-        
+        self.add_output('CX_fallout_stage_1' ,val=1.5,  desc = 'CX coefficient for fallout')
+        self.add_output('CZ_fallout_stage_1' ,val=0.15,  desc = 'CZ coefficient for fallout')
     def compute(self, inputs, outputs):
 
         Mach_table = np.array([0.3,0.4,0.5,0.6,0.7,0.8,0.85,0.9,0.95,1.0,1.15,1.25,1.5,2.0,3.0,4.0,5.0,6.0,7.0,8.0])
@@ -30,6 +31,11 @@ class Aerodynamics_Comp(ExplicitComponent):
         
         outputs['AoA_table'] = np.linspace(0.,20.,15)
         
+        
+        outputs['CX_fallout_stage_1'] =1.5
+        outputs['CZ_fallout_stage_1']=0.15 
+    
+    
         outputs['Table_CX_complete_ascent'] = np.array([[0.1100924 , 0.10932488, 0.10699298, 0.1036542 , 0.10431376,
         0.11642072, 0.12858407, 0.14488072, 0.16449431, 0.1859498 ,
         0.24294328, 0.2620629 , 0.25533232, 0.23843264, 0.21538797],
@@ -90,6 +96,8 @@ class Aerodynamics_Comp(ExplicitComponent):
        [0.83474261, 0.85481471, 0.8769758 , 0.9011351 , 0.92693697,
         1.00779753, 1.05722006, 1.13482642, 1.20714213, 1.32933996,
         1.28332924, 1.22226736, 1.20448262, 1.17539687, 1.1372082 ]])  
+
+
         
         
 

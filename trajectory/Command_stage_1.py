@@ -59,11 +59,17 @@ def Command_stage_1(t,m,N_eng,Pa,Exit_nozzle_area,Pitch_over_duration,\
                 T =N_eng*(Cst.g0*Isp*mass_flow_rate/N_eng-Pa*Exit_nozzle_area)
            
         pdyn = .5*rho*V**2
+        
         if pdyn<Spec.specifications['command']['ascent']['pdyn_end_gravity_turn']:
             if altitude<2000e3 and altitude>0.:
                 #control phase out of the atmosphere
-                theta = interp_theta_stage_1(altitude)*np.pi/180.
-                alpha = theta - gamma
+                if type(interp_theta_stage_1) == np.float :
+                    alpha = 0.
+                    theta = gamma
+                else:
+                    theta = interp_theta_stage_1(m)*np.pi/180.
+                    alpha = theta - gamma
+                    
             else:
                 theta = 0.*np.pi/180.
                 alpha = theta - gamma   
@@ -72,7 +78,7 @@ def Command_stage_1(t,m,N_eng,Pa,Exit_nozzle_area,Pitch_over_duration,\
     if (m<Mass_f1):
         mass_flow_rate = 0.
         T=0.
-        
+
     return np.array([T, alpha, theta, mass_flow_rate])
 
 
