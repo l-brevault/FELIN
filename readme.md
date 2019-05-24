@@ -31,3 +31,4 @@ Version 0.1
 ## Authors
 
 * **Loic Brevault** - *ONERA* - [mailto](mailto:loic.brevault@onera.fr)
+* **Mathieu Balesdent** - *ONERA* - [mailto](mailto:mathieu.balesdent@onera.fr)
