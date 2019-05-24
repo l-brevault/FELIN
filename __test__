@@ -1,0 +1,117 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed May 22 14:30:31 2019
+
+@author: osboxes
+"""
+
+import numpy as np
+import pandas as pd
+import sys
+np.set_printoptions(threshold=sys.maxsize)
+from matplotlib import pyplot as plt
+from IPython.display import HTML
+
+from openmdao.api import Problem, view_model
+import cma
+
+
+import Launch_vehicle_Group
+import post_traitement
+import result_vizualization
+import constants as Cst
+import specifications as Spec
+from  result_vizualization import plots_output
+
+P_obj = Problem()
+P_obj.model=Launch_vehicle_Group.Launcher_vehicle()
+P_obj.setup()
+
+
+def FPI_optim(x,lowerbnd_exp,upperbnd_exp,Pb):
+
+    Pb.setup(check = False)
+    XX = lowerbnd_exp + (upperbnd_exp - lowerbnd_exp)*x
+    Pb['Diameter_stage_1'] = 5.0
+    Pb['Diameter_stage_2'] = 5.0
+    Pb['Mass_flow_rate_stage_1'] = 300.
+    Pb['Mass_flow_rate_stage_2'] = 200.
+    Pb['Thrust_stage_1'] = 1000.
+    Pb['Thrust_stage_2'] = 1000. # not used
+    Pb['OF_stage_1'] = 5.
+    Pb['OF_stage_2'] = 5.5
+    Pb['Pc_stage_1'] = 80.0
+    Pb['Pc_stage_2'] = 60.0
+    Pb['Pe_stage_1'] = 1.0
+    Pb['Pe_stage_2'] = 1.0
+    Pb['N_eng_stage_1'] = 6.
+    Pb['N_eng_stage_2'] = 1.
+    Pb['Prop_mass_stage_1'] = XX[0]*1e3
+    Pb['Prop_mass_stage_2'] = XX[1]*1e3
+    Pb['thetacmd_i'] = XX[2]
+    Pb['thetacmd_f'] = XX[3] 
+    Pb['ksi'] = XX[4]
+    Pb['Pitch_over_duration'] = XX[5]
+    Pb['Exit_nozzle_area_stage_1'] = 0.79
+    Pb['Exit_nozzle_area_stage_2'] = 3.6305
+    Pb['Delta_vertical_phase'] = XX[6]
+    Pb['Delta_theta_pitch_over'] = XX[7]        
+    Pb['command_stage_1_exo'] = XX[8:10]
+    Pb['is_fallout']=1.
+
+    error = 100.
+    Pb['Pdyn_max_dim'] = 40.
+    k=0
+    while error>1. and k<20:
+        Pb.run_model()
+        error = abs(Pb['Pdyn_max_dim']-Pb['max_pdyn_load_ascent_stage_1']/1e3)
+        Pb['Pdyn_max_dim'] = Pb['max_pdyn_load_ascent_stage_1']/1e3
+        k = k+1
+    return Pb
+
+
+lowerbnd_exp = np.array([250.,#Prop_mass_stage_1
+                         50., #Prop_mass_stage_2
+                         -10.,#theta_cmd_i
+                         -30.,#theta_cmd_f
+                         -1.,#ksi
+                         5., #Pitch_over_duration
+                         5., #Delta_vertical_phase
+                         1., #Delta_theta_pitch_over
+                         20.,20.]) #command_stage_1_exo
+
+upperbnd_exp = np.array([350.,#Prop_mass_stage_1
+                         100., #Prop_mass_stage_2
+                         40.,#theta_cmd_i
+                         20.,#theta_cmd_f
+                         1.,#ksi
+                         15., #Pitch_over_duration
+                         20., #Delta_vertical_phase
+                         5., #Delta_theta_pitch_over
+                         70.,70.]) #command_stage_1_exo
+
+init = np.array([5.59159787e-01, 9.85305447e-01, 3.58888434e-01, 8.81444744e-01,
+ 8.77551134e-01, 6.87311972e-02, 2.95329833e-01, 6.03321202e-01,
+ 1.83771422e-03, 8.35412438e-04])
+ 
+ 
+P_out = FPI_optim(init,lowerbnd_exp,upperbnd_exp,P_obj)
+result_vizualization.plots_output(P_out)
+
+post_traitement.post_traitement(P_out)
+#plots_output(P_out)
+#
+#fig= plt.figure()
+#Nb_final_fallout = np.int(P_out['Nb_pt_fallout'])
+#plt.plot(P_out['T_fallout'][0:Nb_final_fallout],P_out['alt_fallout'][0:Nb_final_fallout]/1e3)
+#plt.xlabel('Time (s)')
+#plt.ylabel('Altitude (km)')
+#
+#
+#
+#fig= plt.figure()
+#
+#plt.plot(P_out['T_fallout'][0:Nb_final_fallout],P_out['nx_fallout'][0:Nb_final_fallout])
+#plt.xlabel('Time (s)')
+#plt.ylabel('Load factor')

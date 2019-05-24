@@ -49,7 +49,7 @@ class Dry_Mass_stage_1_Comp(ExplicitComponent):
         Constants['g0']=9.80665
         Constants['Type_interstage']='lower'
         Constants['SSM_TF_1st_stage'] = 1.25
-        Constants['Masse_aux_stage_1'] = 9000.
+        Constants['Masse_aux_stage_1'] = 3000.
         Constants['NX_max_dim'] = Spec.specifications['command']['ascent']['nx_max']
         
         Thrust_1 = inputs['Thrust_stage_1']*1e3       

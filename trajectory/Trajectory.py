@@ -12,6 +12,7 @@ from scipy import interpolate, integrate
 
 from trajectory.Simulation_stage_1 import simulation_stage_1
 from trajectory.Simulation_stage_2 import simulation_stage_2
+from trajectory.Simulation_fallout_stage_1 import simulation_fallout_stage_1
 
 from trajectory.Event_meco import event_meco
 from trajectory.Event_fairing import event_fairing_jettison
@@ -55,7 +56,10 @@ class Trajectory_comp(ExplicitComponent):
         self.add_input('Mach_table',val =np.ones(20))  
         self.add_input('AoA_table',val =np.ones(15))  
         self.add_input('command_stage_1_exo',val =np.array([1.,1.]))  
-        
+        self.add_input('CX_fallout_stage_1',val = 1.)        
+        self.add_input('CZ_fallout_stage_1',val = 1.)        
+        self.add_input('is_fallout',val = 1.)        
+
         
         ## Outputs
         self.add_output('T_ascent',shape = 4000)   
@@ -80,6 +84,30 @@ class Trajectory_comp(ExplicitComponent):
         self.add_output('pdyn_ascent',shape = 4000)
         self.add_output('rho_ascent',shape = 4000)
         self.add_output('distance_ascent',shape = 4000)
+        
+        self.add_output('T_fallout',shape = 1000)   
+        self.add_output('alt_fallout',shape = 1000)
+        self.add_output('flux_fallout',shape = 1000)
+        self.add_output('r_fallout',shape = 1000)
+        self.add_output('V_fallout',shape = 1000)
+        self.add_output('theta_fallout',shape = 1000)
+        self.add_output('alpha_fallout',shape = 1000)
+        self.add_output('nx_fallout',shape = 1000)
+        self.add_output('Nb_pt_fallout',val= 1000)
+        self.add_output('m_fallout',shape = 1000)
+        self.add_output('CX_fallout',shape = 1000)
+        self.add_output('CZ_fallout',shape = 1000)
+        self.add_output('lat_fallout',shape = 1000)
+        self.add_output('gamma_fallout',shape = 1000)
+        self.add_output('longi_fallout',shape = 1000)
+        self.add_output('thrust_fallout',shape = 1000)
+        self.add_output('mass_flow_rate_fallout',shape = 1000)
+        self.add_output('Mach_fallout',shape = 1000)
+        self.add_output('pdyn_fallout',shape = 1000)
+        self.add_output('rho_fallout',shape = 1000)
+        self.add_output('distance_fallout',shape = 1000)
+        
+        
         self.add_output('state_separation_stage_1',shape=(5,)) 
         self.add_output('max_pdyn_load_ascent_stage_1',val=40e3) 
 
@@ -114,8 +142,8 @@ class Trajectory_comp(ExplicitComponent):
 
         outputs['GLOW'] = initial_mass #Gross Lift-Off Weight (GLOW)
         final_mass_stage_1 = initial_mass -inputs['Prop_mass_stage_1'][0] #Supposed final mass after stage 1 propellant combustion
-        table_alt_theta_stage_1 = np.array([-1.,2000e3])  #table for pitch angle interpolation as a function of altitude
-        interp_theta_stage_1 = interpolate.interp1d(table_alt_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
+        #table_alt_theta_stage_1 = np.array([-1.,2000e3])  #table for pitch angle interpolation as a function of altitude
+        #interp_theta_stage_1 = interpolate.interp1d(table_alt_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
 
         #Aerodynamics definition (table of Mach, Incidence (alpha), and resulting drag coefficient CX)
         Table_Mach_ = inputs['Mach_table'] 
@@ -143,11 +171,11 @@ class Trajectory_comp(ExplicitComponent):
         param_integration_stage_1['command']['Pitch_over_duration'] = inputs['Pitch_over_duration'][0] #duration of the pitch over manoeuver
         param_integration_stage_1['command']['Delta_theta_pitch_over'] = inputs['Delta_theta_pitch_over'][0] #angle of pitch for the pitch over manoeuver
         param_integration_stage_1['command']['Delta_vertical_phase'] = inputs['Delta_vertical_phase'][0] #duration of the vertical lift-off phase
-        param_integration_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
+        param_integration_stage_1['command']['Interp_theta_stage_1'] = 0.#interp_theta_stage_1
         
         param_integration_stage_1['geometry'] = {}
         param_integration_stage_1['geometry']['Exit_nozzle_area']=inputs['Exit_nozzle_area_stage_1'][0]
-        param_integration_stage_1['geometry']['Diameter']=inputs['Diameter_stage_1'][0]
+        param_integration_stage_1['geometry']['Diameter']=np.max([inputs['Diameter_stage_1'][0],inputs['Diameter_stage_2'][0]])
         
         param_integration_stage_1['simu'] = {}
         param_integration_stage_1['simu']['Mode_simu']= 1. #integration (1) or simulation (0)
@@ -281,6 +309,13 @@ class Trajectory_comp(ExplicitComponent):
                     
                     if dico_events_stage_1['list_name_events'][j] == 'fairing': ### largage coiffe             
                         initial_state[-1] = initial_state[-1] - Constants['Fairing_mass']
+                        param_integration_stage_1['masses']['Mass_f']= final_mass_stage_1 - Constants['Fairing_mass']
+
+                    if dico_events_stage_1['list_name_events'][j]=='exo_flight':
+                        #creation of interpolation of theta_stage_1 for exo atmospheric phase
+                        table_m_theta_stage_1 = np.array([current_m[-1][0]+1e3,final_mass_stage_1[0]-50e3])  #table for pitch angle interpolation as a function of mass
+                        interp_theta_stage_1 = interpolate.interp1d(table_m_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
+                        param_integration_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
                         
             # update of the list of events
             for k in reversed(range(len(dico_events_stage_1['list_events']))):
@@ -343,7 +378,7 @@ class Trajectory_comp(ExplicitComponent):
         
 ####################################### 2nd stage ####################################################################
 
-        instant_end_flight_stage_1 = current_sol.t[-1]
+        instant_end_flight_stage_1 = current_sol.t[-1].copy()
         outputs['alpha_cont']=np.max(np.abs(data_simu['alpha']))
 
 
@@ -381,7 +416,7 @@ class Trajectory_comp(ExplicitComponent):
             event_seco_ = lambda t,x :event_seco(t,x,param_integration_stage_2)  #Second stage engine cut-off
             event_seco_.terminal = True
             event_seco_.direction = 1
-    #            
+            dico_events_stage_1
             event_fairing = lambda t,x :event_fairing_jettison(t,x,param_integration_stage_2) #Second stage fairing jettison
             event_fairing.terminal = True
             event_fairing.direction = -1 
@@ -527,7 +562,7 @@ class Trajectory_comp(ExplicitComponent):
         outputs['longi_ascent'][0:Nb_pt] = data_simu['longi'].T[0]   
         outputs['m_ascent'][0:Nb_pt] = data_simu['m'].T[0]  
         outputs['distance_ascent'][0:Nb_pt] = data_simu['distance'].T[0]     
-        
+
         #Definition of additional data for post-treatment
         self.data_events={}
         self.data_events['stage_1'] = dico_events_stage_1
@@ -538,4 +573,135 @@ class Trajectory_comp(ExplicitComponent):
         self.data_simu['ascent'] = data_simu
         
 
+
+    	### FALLOUT PHASE 
+        if inputs['is_fallout'][0] == 1.:
+            
+            step_fallout = 2
+            #Definition of state_vector at meco and time
+            initial_state_fallout = state_separation_stage_1.copy()
+            initial_time_fallout = instant_end_flight_stage_1.copy()
+            
+            #Definition of ode parameters        
+            param_integration_fallout_stage_1 = {}       
+            param_integration_fallout_stage_1['aero'] = {}
+            param_integration_fallout_stage_1['aero']['CX'] = inputs['CX_fallout_stage_1'][0]
+            param_integration_fallout_stage_1['aero']['CZ'] = inputs['CZ_fallout_stage_1'][0]
+            
+            param_integration_fallout_stage_1['geometry'] = {}
+            param_integration_fallout_stage_1['geometry']['Diameter']=inputs['Diameter_stage_1'][0]
+            
+            param_integration_fallout_stage_1['simu'] = {}
+            param_integration_fallout_stage_1['simu']['Mode_simu']= 1. #integration (1) or simulation (0)
+            
+            param_simu_fallout_stage_1 = copy.deepcopy(param_integration_fallout_stage_1)              
+            param_simu_fallout_stage_1['simu']['Mode_simu']=0.
+            fonction_ode_integration = lambda t,x :simulation_fallout_stage_1(t,x,param_integration_fallout_stage_1)  #launcher simulation equations of motion
+    
+            fonction_ode_simu = lambda t,x :simulation_fallout_stage_1(t,x,param_simu_fallout_stage_1)  #launcher simulation equations of motion
+    
+            dico_events_fallout_stage_1={}
+            dico_events_fallout_stage_1['impact'] = {}
+            dico_events_fallout_stage_1['impact']['actif'] = False
+            dico_events_fallout_stage_1['impact']['instant'] = 0.
+            dico_events_fallout_stage_1['impact']['state']=  0.
+            
+            event_impact_ = lambda t,x :event_impact(t,x,param_integration_fallout_stage_1) ##Second stage Earth impact
+            event_impact_.terminal = True
+            event_impact_.direction = -1
+            
+            span_integration = (initial_time_fallout,initial_time_fallout+1000)
+    
+            if dico_events_stage_1['fairing']['actif'] == False: # calcul de la masse de l'etage 1 a la separation
+                
+                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass'] + Constants['Fairing_mass'])
+            else :
+                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass'])
+            
+    
+            dico_events_fallout_stage_1['list_name_events'] = ['impact']
+            dico_events_fallout_stage_1['list_events'] = [event_impact_]
+            
+            current_sol_fallout = integrate.solve_ivp(fonction_ode_integration,span_integration, initial_state_fallout,
+                                              atol=atol_integration,rtol=rtol_integration,
+                                              dense_output = True,method=integration_method,
+                                              events =  dico_events_fallout_stage_1['list_events'])
+            
+    
+            current_T_fallout = np.append(np.arange(current_sol_fallout.t[0],current_sol_fallout.t[-1],step_fallout),current_sol_fallout.t[-1])
+            
+            current_NX_fallout = np.zeros([len(current_T_fallout),1])
+            current_Mach_fallout = np.zeros([len(current_T_fallout),1])
+            current_Pdyn_fallout = np.zeros([len(current_T_fallout),1])
+            current_flux_fallout = np.zeros([len(current_T_fallout),1])
+            current_alt_fallout = np.zeros([len(current_T_fallout),1])
+            current_alpha_fallout = np.zeros([len(current_T_fallout),1])
+            current_gamma_fallout = np.zeros([len(current_T_fallout),1])
+            current_theta_fallout = np.zeros([len(current_T_fallout),1])
+            current_V_fallout = np.zeros([len(current_T_fallout),1])
+            current_rho_fallout = np.zeros([len(current_T_fallout),1])
+            current_CX_fallout = np.zeros([len(current_T_fallout),1])
+            current_CZ_fallout = np.zeros([len(current_T_fallout),1])
+    
+            current_r_fallout = np.zeros([len(current_T_fallout),1])
+            current_distance_fallout = np.zeros([len(current_T_fallout),1])
+            current_thrust_fallout = np.zeros([len(current_T_fallout),1])
+            current_lat_fallout = np.zeros([len(current_T_fallout),1])
+            current_longi_fallout = np.zeros([len(current_T_fallout),1])
+            current_m_fallout = np.zeros([len(current_T_fallout),1])
+            current_mass_flow_rate_fallout = np.zeros([len(current_T_fallout),1])
+    
+            #Post traitment of the ODE integration to save the interesting data 
+            for i in range(len(current_T_fallout)):
+                (current_r_fallout[i], current_V_fallout[i], current_gamma_fallout[i], current_longi_fallout[i], current_m_fallout[i], current_NX_fallout[i],
+                current_Mach_fallout[i],current_Pdyn_fallout[i],current_flux_fallout[i],current_alt_fallout[i],current_alpha_fallout[i],current_theta_fallout[i],
+                current_rho_fallout[i], current_CX_fallout[i],current_CZ_fallout[i],current_thrust_fallout[i],current_mass_flow_rate_fallout[i],
+                current_distance_fallout[i],current_lat_fallout[i]) = fonction_ode_simu(current_T_fallout[i],current_sol_fallout.sol(current_T_fallout[i]))
+                        
+            # save of trajectory data of the current phase 
+            data_simu_fallout = {}
+            data_simu_fallout['T'] =  np.array([current_T_fallout]).T
+            data_simu_fallout['nx'] = current_NX_fallout
+            data_simu_fallout['Mach'] = current_Mach_fallout    
+            data_simu_fallout['pdyn'] = current_Pdyn_fallout     
+            data_simu_fallout['flux'] = current_flux_fallout 
+            data_simu_fallout['r'] = current_r_fallout      
+            data_simu_fallout['alt'] = current_alt_fallout   
+            data_simu_fallout['alpha'] = current_alpha_fallout*180/np.pi
+            data_simu_fallout['gamma'] = current_gamma_fallout*180/np.pi
+            data_simu_fallout['theta'] = current_theta_fallout*180/np.pi
+            data_simu_fallout['V'] = current_V_fallout
+            data_simu_fallout['rho'] = current_rho_fallout
+            data_simu_fallout['CX'] = current_CX_fallout
+            data_simu_fallout['CZ'] = current_CZ_fallout
+            data_simu_fallout['thrust'] = current_thrust_fallout
+            data_simu_fallout['mass_flow_rate'] = current_mass_flow_rate_fallout
+            data_simu_fallout['lat'] = current_lat_fallout*180/np.pi
+            data_simu_fallout['longi'] = current_longi_fallout*180/np.pi
+            data_simu_fallout['m'] =current_m_fallout
+            data_simu_fallout['distance'] =current_distance_fallout
+            
+            Nb_pt_fallout = len(data_simu_fallout['T'])
+            outputs['Nb_pt_fallout'] = Nb_pt_fallout
+            outputs['T_fallout'][0:Nb_pt_fallout] = data_simu_fallout['T'].T[0]
+            outputs['r_fallout'][0:Nb_pt_fallout] = data_simu_fallout['r'].T[0]
+            outputs['nx_fallout'][0:Nb_pt_fallout] = data_simu_fallout['nx'].T[0]
+            outputs['Mach_fallout'][0:Nb_pt_fallout] = data_simu_fallout['Mach'].T[0]     
+            outputs['pdyn_fallout'][0:Nb_pt_fallout] = data_simu_fallout['pdyn'].T[0]     
+            outputs['flux_fallout'][0:Nb_pt_fallout] = data_simu_fallout['flux'].T[0]     
+            outputs['alt_fallout'][0:Nb_pt_fallout] = data_simu_fallout['alt'].T[0]    
+            outputs['alpha_fallout'][0:Nb_pt_fallout] = data_simu_fallout['alpha'].T[0]
+            outputs['gamma_fallout'][0:Nb_pt_fallout] = data_simu_fallout['gamma'].T[0]
+            outputs['theta_fallout'][0:Nb_pt_fallout] = data_simu_fallout['theta'].T[0]
+            outputs['V_fallout'][0:Nb_pt_fallout] = data_simu_fallout['V'].T[0]  
+            outputs['rho_fallout'][0:Nb_pt_fallout] = data_simu_fallout['rho'].T[0]   
+            outputs['CX_fallout'][0:Nb_pt_fallout] = data_simu_fallout['CX'].T[0] 
+            outputs['CZ_fallout'][0:Nb_pt_fallout] = data_simu_fallout['CZ'].T[0]       
+    
+            outputs['thrust_fallout'][0:Nb_pt_fallout] = data_simu_fallout['thrust'].T[0]
+            outputs['mass_flow_rate_fallout'][0:Nb_pt_fallout] = data_simu_fallout['mass_flow_rate'].T[0]       
+            outputs['lat_fallout'][0:Nb_pt_fallout] = data_simu_fallout['lat'].T[0]    
+            outputs['longi_fallout'][0:Nb_pt_fallout] = data_simu_fallout['longi'].T[0]   
+            outputs['m_fallout'][0:Nb_pt_fallout] = data_simu_fallout['m'].T[0]  
+            outputs['distance_fallout'][0:Nb_pt_fallout] = data_simu_fallout['distance'].T[0]
         
