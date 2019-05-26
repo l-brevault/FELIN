@@ -31,10 +31,10 @@ class Propulsion_Comp(ExplicitComponent):
         
     def compute(self, inputs, outputs):
 
-        Mixture_ratio_tab = np.array([3.,4.,5.,6.])
-        Molecular_mass_tab = np.array([8.0,10.0,11.8,13.3])  #molecular mass at combustion for the couple LOX/LH2
-        Gamma_t_tab = np.array([1.248,1.222,1.212,1.2075]) #isentropic coefficient at the throat for the couple LOX/LH2
-        Flame_temperature_tab = np.array([2450.,2925.,3250.,3420.]) #flame temperature at combustion for the couple LOX/LH2
+        Mixture_ratio_tab = np.array([2.,3.,4.,5.,6.])
+        Molecular_mass_tab = np.array([6.048,8.055,10.007,11.83,13.48])  #molecular mass at combustion for the couple LOX/LH2
+        Gamma_t_tab = np.array([1.2949,1.2442,1.2004,1.1646,1.1415]) #isentropic coefficient at the throat for the couple LOX/LH2
+        Flame_temperature_tab = np.array([1797.7,2451.63,2950.72,3293.24,3499.67]) #flame temperature at combustion for the couple LOX/LH2
         
         f_Molecular_mass = interp1d(Mixture_ratio_tab, Molecular_mass_tab, kind='cubic') #cubic interpolator 1d
         f_Gamma_t = interp1d(Mixture_ratio_tab, Gamma_t_tab, kind='cubic') #cubic interpolator 1d
