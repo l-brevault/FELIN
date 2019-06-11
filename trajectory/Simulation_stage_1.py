@@ -61,7 +61,7 @@ def simulation_stage_1(t,x, Parameters):
     Mass_flow_rate= cmd_tmp[3] #engines mass flow rate
 
     #Aerodynamic forces
-    CX = Interp_CX_stage_1(np.abs(alpha)*180/np.pi,Mach)  #drag coefficient as a function of Mach and angle of attack
+    CX = Interp_CX_stage_1(Mach,np.abs(alpha)*180/np.pi)  #drag coefficient as a function of Mach and angle of attack
 
     #Equations of motion    
     r_dot = V* np.sin(gamma) #gradient of radius
