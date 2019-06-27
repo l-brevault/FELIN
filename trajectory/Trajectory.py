@@ -316,6 +316,7 @@ class Trajectory_comp(ExplicitComponent):
                         table_m_theta_stage_1 = np.array([current_m[-1][0]+1e3,final_mass_stage_1[0]-50e3])  #table for pitch angle interpolation as a function of mass
                         interp_theta_stage_1 = interpolate.interp1d(table_m_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
                         param_integration_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
+                        param_simu_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
                         
             # update of the list of events
             for k in reversed(range(len(dico_events_stage_1['list_events']))):

@@ -78,7 +78,7 @@ def Command_stage_1(t,m,N_eng,Pa,Exit_nozzle_area,Pitch_over_duration,\
     if (m<Mass_f1):
         mass_flow_rate = 0.
         T=0.
-
+    
     return np.array([T, alpha, theta, mass_flow_rate])
 
 
