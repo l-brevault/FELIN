@@ -499,7 +499,7 @@ class Trajectory_comp(ExplicitComponent):
                     current_rho[i], current_CX[i],current_thrust[i],current_mass_flow_rate[i],
                     current_distance[i],current_lat[i]) = fonction_ode_simu(current_T[i],current_sol.sol(current_T[i]))
                 
-                initial_state = current_sol.y[:,-1].copy()
+                initial_state_stage_2 = current_sol.y[:,-1].copy()
     
                 #### checking for events and modification of state if needed ####
                 for j in range(len(dico_events_stage_2['list_events'])):
@@ -509,7 +509,7 @@ class Trajectory_comp(ExplicitComponent):
                         dico_events_stage_2[dico_events_stage_2['list_name_events'][j]]['state'] = current_sol.y[:,-1].copy()
     
                         if dico_events_stage_2['list_name_events'][j] == 'fairing':             
-                            initial_state[-1] = initial_state[-1] - Constants['Fairing_mass']
+                            initial_state_stage_2[-1] = initial_state_stage_2[-1] - Constants['Fairing_mass']
                 
                 #update of list of events
                 for k in reversed(range(len(dico_events_stage_2['list_events']))):
