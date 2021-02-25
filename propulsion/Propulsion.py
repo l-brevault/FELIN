@@ -61,12 +61,29 @@ class Propulsion_Comp(ExplicitComponent):
         C_star_stage_2 = eta_c_2*(np.sqrt(Gamma_t_stage_2*R_stage_2*Flame_temperature_stage_2))/(Gamma_t_stage_2*(2/(Gamma_t_stage_2+1))**((Gamma_t_stage_2+1)/(2*(Gamma_t_stage_2-1))))
 
         # Calculation nozzle aera ratio        
-        eps_stage_1 = (2./(Gamma_t_stage_1+1.)**(1./(Gamma_t_stage_1-1.)))*(inputs['Pc_stage_1']/inputs['Pe_stage_1'])**(1./Gamma_t_stage_1)/np.sqrt(((Gamma_t_stage_1+1.)/(Gamma_t_stage_1-1.))*(1.-(inputs['Pe_stage_1']/inputs['Pc_stage_1'])**((Gamma_t_stage_1-1.)/(Gamma_t_stage_1))))
-        eps_stage_2 = (2./(Gamma_t_stage_2+1.)**(1./(Gamma_t_stage_2-1.)))*(inputs['Pc_stage_2']/inputs['Pe_stage_2'])**(1./Gamma_t_stage_2)/np.sqrt(((Gamma_t_stage_2+1.)/(Gamma_t_stage_2-1.))*(1.-(inputs['Pe_stage_2']/inputs['Pc_stage_2'])**((Gamma_t_stage_2-1.)/(Gamma_t_stage_2))))
-
+        P_c1 = inputs['Pc_stage_1'][0]
+        P_e1 =inputs['Pe_stage_1'][0]
+        A1 = (2/(Gamma_t_stage_1+1)) ** (1/(Gamma_t_stage_1-1)) #unitless
+        B1 = (P_c1/P_e1) ** (1/Gamma_t_stage_1) #unitless
+        C1 = (Gamma_t_stage_1+1)/(Gamma_t_stage_1-1) #unitless
+        D1 = 1 - (P_e1/P_c1) ** ((Gamma_t_stage_1-1)/Gamma_t_stage_1) #unitless
+        num1 = A1 * B #unitless
+        den1 = np.sqrt(C1 * D1) #unitless
+        eps_stage_1 = num1 / den1 #unitless
+        
+        P_c2 = inputs['Pc_stage_2'][0]
+        P_e2 =inputs['Pe_stage_2'][0]
+        A2 = (2/(Gamma_t_stage_2+1)) ** (1/(Gamma_t_stage_2-1)) #unitless
+        B2 = (P_c2/P_e2) ** (1/Gamma_t_stage_2) #unitless
+        C2 = (Gamma_t_stage_2+1)/(Gamma_t_stage_1-1) #unitless
+        D2 = 1 - (P_e2/P_c2) ** ((Gamma_t_stage_1-1)/Gamma_t_stage_2) #unitless
+        num2 = A2 * B2 #unitless
+        den2 = np.sqrt(C2 * D2) #unitless
+        eps_stage_2 = num2 / den2 #unitless
+        
         # Calculation specific impulse
-        Isp_stage_1 = lambda_1*(C_star_stage_1/g0)*(Gamma_t_stage_1*np.sqrt((2./(Gamma_t_stage_1-1.))*(2./(Gamma_t_stage_1+1.))**((Gamma_t_stage_1+1.)/(Gamma_t_stage_1-1.))*(1.-inputs['Pe_stage_1']/inputs['Pc_stage_1'])**((Gamma_t_stage_1-1.)/Gamma_t_stage_1))+eps_stage_1/inputs['Pc_stage_1']*(inputs['Pe_stage_1']))
-        Isp_stage_2 = lambda_2*(C_star_stage_2/g0)*(Gamma_t_stage_2*np.sqrt((2./(Gamma_t_stage_2-1.))*(2./(Gamma_t_stage_2+1.))**((Gamma_t_stage_2+1.)/(Gamma_t_stage_2-1.))*(1.-inputs['Pe_stage_2']/inputs['Pc_stage_2'])**((Gamma_t_stage_2-1.)/Gamma_t_stage_2))+eps_stage_2/inputs['Pc_stage_2']*(inputs['Pe_stage_2']))
+        Isp_stage_1 = lambda_1*(C_star_stage_1/g0)*(Gamma_t_stage_1*np.sqrt((2./(Gamma_t_stage_1-1.))*(2./(Gamma_t_stage_1+1.))**((Gamma_t_stage_1+1.)/(Gamma_t_stage_1-1.))*(1.-(inputs['Pe_stage_1']/inputs['Pc_stage_1'])**((Gamma_t_stage_1-1.)/Gamma_t_stage_1)))+eps_stage_1/inputs['Pc_stage_1']*(inputs['Pe_stage_1']))
+        Isp_stage_2 = lambda_2*(C_star_stage_2/g0)*(Gamma_t_stage_2*np.sqrt((2./(Gamma_t_stage_2-1.))*(2./(Gamma_t_stage_2+1.))**((Gamma_t_stage_2+1.)/(Gamma_t_stage_2-1.))*(1.-(inputs['Pe_stage_2']/inputs['Pc_stage_2'])**((Gamma_t_stage_2-1.)/Gamma_t_stage_2)))+eps_stage_2/inputs['Pc_stage_2']*(inputs['Pe_stage_2']))
         
                 
         outputs['Isp_stage_1'] = Isp_stage_1      
