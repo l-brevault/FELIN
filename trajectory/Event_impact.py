@@ -7,7 +7,7 @@ Created on Fri Oct  5 13:46:06 2018
 import numpy as np
 import constants as Cst
 
-def event_impact(t,x,parameters):
+def event_impact(t,x):
     'an event is when f = 0 and event is increasing'
 
     r = x[0] 

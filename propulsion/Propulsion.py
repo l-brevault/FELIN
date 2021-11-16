@@ -67,7 +67,7 @@ class Propulsion_Comp(ExplicitComponent):
         B1 = (P_c1/P_e1) ** (1/Gamma_t_stage_1) #unitless
         C1 = (Gamma_t_stage_1+1)/(Gamma_t_stage_1-1) #unitless
         D1 = 1 - (P_e1/P_c1) ** ((Gamma_t_stage_1-1)/Gamma_t_stage_1) #unitless
-        num1 = A1 * B #unitless
+        num1 = A1 * B1 #unitless
         den1 = np.sqrt(C1 * D1) #unitless
         eps_stage_1 = num1 / den1 #unitless
         

@@ -135,9 +135,9 @@ class Trajectory_comp(ExplicitComponent):
 
         ######################## 1st stage definition ###################################
         #Mass and time definition
-        tf1 = (inputs['Prop_mass_stage_1'])/(inputs['N_eng_stage_1']*inputs['Mass_flow_rate_stage_1']*0.8) #time of flight
-        initial_mass = inputs['Dry_mass_stage_1'] + inputs['Dry_mass_stage_2'] +\
-                            inputs['Prop_mass_stage_1'] + inputs['Prop_mass_stage_2']+\
+        tf1 = (inputs['Prop_mass_stage_1'][0])/(inputs['N_eng_stage_1'][0]*inputs['Mass_flow_rate_stage_1'][0]*0.8) #time of flight
+        initial_mass = inputs['Dry_mass_stage_1'][0] + inputs['Dry_mass_stage_2'][0] +\
+                            inputs['Prop_mass_stage_1'][0] + inputs['Prop_mass_stage_2'][0]+\
                             Constants['Payload_mass'] + Constants['Fairing_mass'] #Gross Lift-Off Weight (GLOW)
 
         outputs['GLOW'] = initial_mass #Gross Lift-Off Weight (GLOW)
@@ -151,8 +151,8 @@ class Trajectory_comp(ExplicitComponent):
         Interp2_CX_complete_launcher=interpolate.interp2d(Table_incidence,Table_Mach_,inputs['Table_CX_complete_ascent'])
         
         ######################## 2nd stage definition ###################################
-        tf2 = inputs['Prop_mass_stage_2']/(inputs['Mass_flow_rate_stage_2'][0]*(1-(1-Cst.derating_stage_2)))  #time of flight 2nd stage
-        final_mass_stage_2 = inputs['Dry_mass_stage_2'] + Constants['Payload_mass']  #expected final mass of the 2nd stage
+        tf2 = inputs['Prop_mass_stage_2'][0]/(inputs['Mass_flow_rate_stage_2'][0]*(1-(1-Cst.derating_stage_2)))  #time of flight 2nd stage
+        final_mass_stage_2 = inputs['Dry_mass_stage_2'][0] + Constants['Payload_mass']  #expected final mass of the 2nd stage
 
         ##################### Definition of parameter dictionary for 1st stage ###############
         param_integration_stage_1 = {}       
@@ -217,7 +217,7 @@ class Trajectory_comp(ExplicitComponent):
         event_exo_flight_.terminal = True
         event_exo_flight_.direction = -1       
                 
-        event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_1) #launcher impact the ground
+        event_impact_ = lambda t,x :event_impact(t,x) #launcher impact the ground
         event_impact_.terminal = True
         event_impact_.direction = -1  
         
@@ -313,7 +313,7 @@ class Trajectory_comp(ExplicitComponent):
 
                     if dico_events_stage_1['list_name_events'][j]=='exo_flight':
                         #creation of interpolation of theta_stage_1 for exo atmospheric phase
-                        table_m_theta_stage_1 = np.array([current_m[-1][0]+1e3,final_mass_stage_1[0]-50e3])  #table for pitch angle interpolation as a function of mass
+                        table_m_theta_stage_1 = np.array([current_m[-1][0]+1e3,final_mass_stage_1-50e3])  #table for pitch angle interpolation as a function of mass
                         interp_theta_stage_1 = interpolate.interp1d(table_m_theta_stage_1,inputs['command_stage_1_exo'],kind='linear') #interpolant for pitch angle control
                         param_integration_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
                         param_simu_stage_1['command']['Interp_theta_stage_1'] = interp_theta_stage_1
@@ -422,7 +422,7 @@ class Trajectory_comp(ExplicitComponent):
             event_fairing.terminal = True
             event_fairing.direction = -1 
             
-            event_impact_ = lambda t,x :event_impact(t,x,param_integration_stage_2) ##Second stage Earth impact
+            event_impact_ = lambda t,x :event_impact(t,x) ##Second stage Earth impact
             event_impact_.terminal = True
             event_impact_.direction = -1  
             
@@ -452,12 +452,12 @@ class Trajectory_comp(ExplicitComponent):
                 dico_events_stage_2['fairing']['instant'] = 0.
                 dico_events_stage_2['fairing']['state'] = 0.
     
-                initial_state_stage_2[-1]= inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass'] + Constants['Fairing_mass']
+                initial_state_stage_2[-1]= inputs['Dry_mass_stage_2'][0] + inputs['Prop_mass_stage_2'][0]+Constants['Payload_mass'] + Constants['Fairing_mass']
     
                 dico_events_stage_2['list_name_events'] = ['SECO','fairing','impact']
                 dico_events_stage_2['list_events'] = [event_seco_,event_fairing,event_impact_]
             else :
-                initial_state_stage_2[-1]= inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass']
+                initial_state_stage_2[-1]= inputs['Dry_mass_stage_2'][0] + inputs['Prop_mass_stage_2'][0]+Constants['Payload_mass']
                 dico_events_stage_2['list_name_events'] = ['SECO','impact']
                 dico_events_stage_2['list_events'] = [event_seco_,event_impact_]
     
@@ -607,7 +607,7 @@ class Trajectory_comp(ExplicitComponent):
             dico_events_fallout_stage_1['impact']['instant'] = 0.
             dico_events_fallout_stage_1['impact']['state']=  0.
             
-            event_impact_ = lambda t,x :event_impact(t,x,param_integration_fallout_stage_1) ##Second stage Earth impact
+            event_impact_ = lambda t,x :event_impact(t,x) ##Second stage Earth impact
             event_impact_.terminal = True
             event_impact_.direction = -1
             
@@ -615,9 +615,9 @@ class Trajectory_comp(ExplicitComponent):
     
             if dico_events_stage_1['fairing']['actif'] == False: # calcul de la masse de l'etage 1 a la separation
                 
-                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass'] + Constants['Fairing_mass'])
+                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'][0] + inputs['Prop_mass_stage_2'][0]+Constants['Payload_mass'] + Constants['Fairing_mass'])
             else :
-                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'] + inputs['Prop_mass_stage_2']+Constants['Payload_mass'])
+                initial_state_fallout[-1]= initial_state_fallout[-1] -(inputs['Dry_mass_stage_2'][0] + inputs['Prop_mass_stage_2'][0]+Constants['Payload_mass'])
             
     
             dico_events_fallout_stage_1['list_name_events'] = ['impact']
