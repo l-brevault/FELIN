@@ -75,8 +75,8 @@ class Propulsion_Comp(ExplicitComponent):
         P_e2 =inputs['Pe_stage_2'][0]
         A2 = (2/(Gamma_t_stage_2+1)) ** (1/(Gamma_t_stage_2-1)) #unitless
         B2 = (P_c2/P_e2) ** (1/Gamma_t_stage_2) #unitless
-        C2 = (Gamma_t_stage_2+1)/(Gamma_t_stage_1-1) #unitless
-        D2 = 1 - (P_e2/P_c2) ** ((Gamma_t_stage_1-1)/Gamma_t_stage_2) #unitless
+        C2 = (Gamma_t_stage_2+1)/(Gamma_t_stage_2-1) #unitless
+        D2 = 1 - (P_e2/P_c2) ** ((Gamma_t_stage_2-1)/Gamma_t_stage_2) #unitless
         num2 = A2 * B2 #unitless
         den2 = np.sqrt(C2 * D2) #unitless
         eps_stage_2 = num2 / den2 #unitless
